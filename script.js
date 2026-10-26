@@ -5,13 +5,20 @@
 
 'use strict';
 
-// ── AI Configuration ─────────────────────────────────────────
-// ⚠️  REPLACE "YOUR_API_KEY" below with your actual Gemini API
-//     key from https://aistudio.google.com/app/apikey
-//     Never commit a real key to a public repository.
-// ─────────────────────────────────────────────────────────────
+/* ── AI Configuration ───────────────────────────────────────── */
+// Supports Streamlit embedding via window.STREAMLIT_GEMINI_KEY
+// or direct assignment below.
 const GEMINI_API_KEY = window.STREAMLIT_GEMINI_KEY || "";
-const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;/* ── Uptime clock ─────────────────────────────────────────── */
+
+function getGeminiApiKey() {
+  return window.STREAMLIT_GEMINI_KEY || GEMINI_API_KEY || "";
+}
+
+function getGeminiEndpoint(key) {
+  return `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(key)}`;
+}
+
+/* ── Uptime clock ─────────────────────────────────────────── */
 const BOOT_TIME = Date.now();
 function uptime() {
   const s = Math.floor((Date.now() - BOOT_TIME) / 1000);
@@ -28,8 +35,8 @@ const uptimeEl   = document.getElementById('uptime-val');
 const themeRoot  = document.documentElement;
 
 /* ── State ────────────────────────────────────────────────── */
-let history    = [];
-let historyIdx = -1;
+let history      = [];
+let historyIdx   = -1;
 let currentTheme = 'neon';
 let matrixActive = false;
 let matrixAnim   = null;
@@ -77,7 +84,7 @@ const COMMANDS = {
   <tr><td class="cmd-name">banner</td>
       <td class="cmd-desc">Redisplay the welcome ASCII banner</td></tr>
   <tr><td class="cmd-name ai-cmd">ask / chat &lt;q&gt;</td>
-      <td class="cmd-desc"><span class="ai-badge">AI</span> Send a question to the Gemini AI core</td></tr>
+      <td class="cmd-desc"><span class="ai-badge">AI</span> Send a prompt to Gemini 2.0 Flash</td></tr>
 </table>
 <div class="hl-muted" style="margin-top:8px;font-size:0.85em;">
   ↑ / ↓ arrow keys — navigate history &nbsp;|&nbsp;
@@ -91,18 +98,18 @@ const COMMANDS = {
   whoami() {
     return html(`
 <div class="section-header">▸ IDENTITY MODULE</div>
-<pre class="hl-accent">
-  ██████╗ ███████╗██╗   ██╗
-  ██╔══██╗██╔════╝██║   ██║
-  ██║  ██║█████╗  ██║   ██║
-  ██║  ██║██╔══╝  ╚██╗ ██╔╝
-  ██████╔╝███████╗ ╚████╔╝ 
-  ╚═════╝ ╚══════╝  ╚═══╝  
+<pre class="hl-accent" style="font-size:0.85em;line-height:1.2;">
+ ███████╗ █████╗ ████████╗██╗   ██╗ █████╗     ██████╗ ███████╗██╗   ██╗
+ ██╔════╝██╔══██╗╚══██╔══╝╚██╗ ██╔╝██╔══██╗    ██╔══██╗██╔════╝██║   ██║
+ ███████╗███████║   ██║    ╚████╔╝ ███████║    ██║  ██║█████╗  ██║   ██║
+ ╚════██║██╔══██║   ██║     ╚██╔╝  ██╔══██║    ██║  ██║██╔══╝  ╚██╗ ██╔╝
+ ███████║██║  ██║   ██║      ██║   ██║  ██║    ██████╔╝███████╗ ╚████╔╝ 
+ ╚══════╝╚═╝  ╚═╝   ╚═╝      ╚═╝   ╚═╝  ╚═╝    ╚═════╝ ╚══════╝  ╚═══╝  
 </pre>
 <div style="margin:8px 0 4px">
   <span class="hl-accent bold">Name</span>
   <span class="hl-muted"> ............... </span>
-  <span class="hl-accent2">Dev // Builder // Hacker</span>
+  <span class="hl-accent2">Satya // Dev // Builder // Hacker</span>
 </div>
 <div style="margin:4px 0">
   <span class="hl-accent bold">Location</span>
@@ -247,9 +254,6 @@ const COMMANDS = {
   <div class="proj-link">🔗 <a href="${p.link}" target="_blank" rel="noopener">${p.label}</a></div>
 </div>`;
     }
-    out += `<div class="hl-muted" style="font-size:0.83em;margin-top:8px">
-  Type <span class="hl-accent">projects --open &lt;n&gt;</span> to open a project link (coming soon).
-</div>`;
     return html(out);
   },
 
@@ -301,7 +305,6 @@ const COMMANDS = {
     }
     currentTheme = name;
     themeRoot.setAttribute('data-theme', name);
-    // Update active badges if visible
     document.querySelectorAll('.theme-badge').forEach(b => {
       b.classList.toggle('active', b.textContent === name);
     });
@@ -322,7 +325,7 @@ const COMMANDS = {
   /* ── clear / cls ──────────────────────────────────────── */
   clear() {
     output.innerHTML = '';
-    return null; // no output block added
+    return null;
   },
   cls() { return COMMANDS.clear(); },
 
@@ -352,17 +355,15 @@ const COMMANDS = {
   /* ── quote ────────────────────────────────────────────── */
   quote() {
     const quotes = [
-      ['It\'s not a bug — it\'s an undocumented feature.',                    'Ancient Dev Proverb'],
+      ['It\'s not a bug — it\'s an undocumented feature.', 'Ancient Dev Proverb'],
       ['Any fool can write code that a computer can understand. Good programmers write code that humans can understand.', 'Martin Fowler'],
-      ['First, solve the problem. Then, write the code.',                     'John Johnson'],
-      ['Code never lies; comments sometimes do.',                             'Ron Jeffries'],
-      ['The best code is no code at all.',                                    'Jeff Atwood'],
-      ['Talk is cheap. Show me the code.',                                    'Linus Torvalds'],
+      ['First, solve the problem. Then, write the code.', 'John Johnson'],
+      ['Code never lies; comments sometimes do.', 'Ron Jeffries'],
+      ['The best code is no code at all.', 'Jeff Atwood'],
+      ['Talk is cheap. Show me the code.', 'Linus Torvalds'],
       ['Programs must be written for people to read, and only incidentally for machines to execute.', 'Harold Abelson'],
-      ['Software is like entropy: It is difficult to grasp, weighs nothing, and obeys the Second Law of Thermodynamics; i.e., it always increases.', 'Norman Augustine'],
       ['If debugging is the process of removing software bugs, then programming must be the process of putting them in.', 'Edsger Dijkstra'],
-      ['In theory, there is no difference between theory and practice. But in practice, there is.', 'Jan L.A. van de Snepscheut'],
-      ['Premature optimization is the root of all evil.',                     'Donald Knuth'],
+      ['Premature optimization is the root of all evil.', 'Donald Knuth'],
       ['The most dangerous phrase in the language is: We\'ve always done it this way.', 'Grace Hopper'],
     ];
     const [q, author] = quotes[Math.floor(Math.random() * quotes.length)];
@@ -377,8 +378,8 @@ const COMMANDS = {
 
   /* ── date ─────────────────────────────────────────────── */
   date() {
-    const now  = new Date();
-    const iso  = now.toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+    const now   = new Date();
+    const iso   = now.toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
     const local = now.toLocaleString(undefined, {
       weekday: 'long', year: 'numeric', month: 'long',
       day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit',
@@ -439,12 +440,12 @@ const COMMANDS = {
   },
 
   pwd() {
-    return text('/home/you/the-matrix/reality');
+    return text('/home/satya/portfolio');
   },
 
-  vi()  { return html(`<span class="hl-error">:q!</span><span class="hl-muted"> — Don't worry, I've already exited vi for you.</span>`); },
-  vim() { return COMMANDS.vi(); },
-  nano(){ return html(`<span class="hl-muted">Opening nano... ^X to quit (you're welcome).</span>`); },
+  vi()   { return html(`<span class="hl-error">:q!</span><span class="hl-muted"> — Don't worry, I've already exited vi for you.</span>`); },
+  vim()  { return COMMANDS.vi(); },
+  nano() { return html(`<span class="hl-muted">Opening nano... ^X to quit (you're welcome).</span>`); },
 
   ping(args) {
     const host = args[0] || 'localhost';
@@ -471,114 +472,91 @@ const COMMANDS = {
 /*  GEMINI AI CORE                                             */
 /* ─────────────────────────────────────────────────────────── */
 
-/**
- * runAIQuery — validates the prompt, shows a loading node, fires
- * the Gemini API fetch asynchronously, then replaces / appends
- * the response into the terminal without blocking the UI.
- *
- * Returns a loading DOM node immediately (synchronous); the async
- * response is injected later and the terminal is scrolled again.
- */
 function runAIQuery(args) {
-  // Edge-case: no prompt provided
-  if (!args.length || !args.join(' ').trim()) {
+  const queryText = (Array.isArray(args) ? args.join(' ') : String(args || '')).trim();
+
+  // Edge-case: empty prompt
+  if (!queryText) {
     return html(`
 <div class="hl-warn">Usage: <span class="hl-accent">ask &lt;your question or prompt&gt;</span></div>
 <div class="hl-muted" style="font-size:0.85em;margin-top:3px">
-  Example: <span class="hl-accent">ask What is a Merkle tree?</span>
+  Example: <span class="hl-accent">ask What are your key software projects?</span>
 </div>`);
   }
 
-  // Guard: key not configured
-  if (!GEMINI_API_KEY || GEMINI_API_KEY === 'YOUR_API_KEY'||GEMINI_API_KEY=='') {
+  const apiKey = getGeminiApiKey();
+
+  // Guard: no key configured
+  if (!apiKey || apiKey === 'YOUR_API_KEY') {
     return html(`
-<div class="hl-error">[AI CORE ERROR]: No API key configured.</div>
+<div class="hl-error">[AI CORE ERROR]: No Gemini API key detected.</div>
 <div class="hl-muted" style="font-size:0.85em;margin-top:4px">
-  Open <span class="hl-accent">script.js</span> and replace
-  <span class="hl-accent">YOUR_API_KEY</span> with your Gemini key from
-  <a href="https://aistudio.google.com/app/apikey" target="_blank"
+  Configure <span class="hl-accent">window.STREAMLIT_GEMINI_KEY</span> or set
+  <span class="hl-accent">GEMINI_API_KEY</span> in <span class="hl-accent">script.js</span>.
+  Get a free key at <a href="https://aistudio.google.com/app/apikey" target="_blank"
      rel="noopener" style="color:var(--accent2)">aistudio.google.com</a>.
 </div>`);
   }
 
-  const userPrompt = args.join(' ').trim();
+  // Loading indicator
+  const loader = document.createElement('div');
+  loader.className = 'output-block ai-loader';
+  loader.innerHTML = `
+<div class="ai-prefix">[AI CORE]</div>
+<div class="ai-loading">
+  <span class="ai-spinner">◐</span>
+  <span class="ai-loading-text">Processing query with Gemini 2.0 Flash</span>
+  <span class="ai-dots"></span>
+</div>`;
+  output.appendChild(loader);
+  scrollBottom();
 
-  // ── Loading node (injected immediately) ───────────────────
- const loader = document.createElement('div');
-        loader.className = 'output-block';
-        loader.innerHTML = '<span style="color: var(--color-accent);">[AI CORE]</span> Thinking<span class="blink">...</span>';
-        output.appendChild(loader);
-        scrollBottom();
+  cmdInput.disabled = true;
 
-        cmdInput.disabled = true;
+  // Asynchronous query execution
+  (async () => {
+    try {
+      const endpoint = getGeminiEndpoint(apiKey);
+      const res = await fetch(endpoint, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text: queryText }]
+          }]
+        })
+      });
 
-        (async () => {
-            try {
-                const apiKey = window.STREAMLIT_GEMINI_KEY || (typeof GEMINI_API_KEY !== 'undefined' ? GEMINI_API_KEY : '');
-                const userQuestion = (typeof args !== 'undefined' && Array.isArray(args)) ? args.join(' ') : 
-                                     (typeof args !== 'undefined' ? String(args) : (typeof queryText !== 'undefined' ? queryText : ''));
-                
-                const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=${apiKey}`;
-                
-                const res = await window.fetch(endpoint, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{
-                            parts: [{ text: userQuestion }]
-                        }]
-                    })
-                });
+      const data = await res.json();
+      if (loader && loader.parentNode) loader.remove();
 
-                const data = await res.json();
-                if (loader && loader.parentNode) loader.remove();
+      if (res.ok) {
+        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response received from AI model.';
+        const responseEl = document.createElement('div');
+        responseEl.innerHTML = buildAIResponseHTML(queryText, reply);
+        output.appendChild(responseEl.firstElementChild || responseEl);
+      } else {
+        const errorMsg = data.error?.message || `HTTP ${res.status}`;
+        output.appendChild(errorBlock(`[AI CORE ERROR]: ${errorMsg}`));
+      }
+    } catch (err) {
+      if (loader && loader.parentNode) loader.remove();
+      output.appendChild(errorBlock(`[AI CORE ERROR]: ${err.message || 'Network request failed'}`));
+    } finally {
+      cmdInput.disabled = false;
+      scrollBottom();
+      cmdInput.focus();
+    }
+  })();
 
-                if (res.ok) {
-                    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response received.';
-                    output.appendChild(html(`<div class="output-block" style="white-space: pre-wrap; line-height: 1.5;"><span style="color: var(--color-accent); font-weight: bold;">[GEMINI]</span>\n${reply}</div>`));
-                } else {
-                    output.appendChild(errorBlock(`[AI CORE ERROR] HTTP ${res.status}: ${data.error?.message || JSON.stringify(data)}`));
-                }
-            } catch (err) {
-                if (loader && loader.parentNode) loader.remove();
-                output.appendChild(errorBlock(`[AI CORE ERROR] ${err.message}`));
-            } finally {
-                cmdInput.disabled = false;
-                scrollBottom();
-                cmdInput.focus();
-            }
-        })();
-                const data = await res.json();
-                loader.remove();
-
-                if (res.ok) {
-                    const aiReply = data.candidates?.[0]?.content?.parts?.[0]?.text || "No response received.";
-                    output.appendChild(html(`<div class="output-block" style="white-space: pre-wrap; line-height: 1.5;"><span style="color: var(--color-accent); font-weight: bold;">[GEMINI]</span>\n${aiReply}</div>`));
-                } else {
-                    output.appendChild(errorBlock(`[AI CORE ERROR] HTTP ${res.status}: ${data.error?.message || JSON.stringify(data)}`));
-                }
-            } catch (err) {
-                if (loader && loader.parentNode) loader.remove();
-                output.appendChild(errorBlock(`[AI CORE ERROR] ${err.message}`));
-            } finally {
-                cmdInput.disabled = false;
-                scrollBottom();
-                cmdInput.focus();
-            }
-        })();
-  // Return null — the loader was appended directly above
   return null;
 }
 
 /** Build the styled HTML block for a successful AI reply. */
 function buildAIResponseHTML(prompt, reply) {
-  // Convert newlines to <br> and escape HTML in the reply body
   const safeReply = escapeHtml(reply)
-    .replace(/\n{2,}/g, '</p><p class="ai-para">')  // double-newline → paragraph
-    .replace(/\n/g, '<br>');                          // single newline → line break
-
-  // Light markdown-ish highlighting: **bold** and `code`
-  const formatted = safeReply
+    .replace(/\n{2,}/g, '</p><p class="ai-para">')
+    .replace(/\n/g, '<br>')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/`([^`]+)`/g, '<code class="ai-code">$1</code>');
 
@@ -589,17 +567,17 @@ function buildAIResponseHTML(prompt, reply) {
     <span class="ai-query-label hl-muted"> ↳ ${escapeHtml(prompt.slice(0, 80))}${prompt.length > 80 ? '…' : ''}</span>
   </div>
   <div class="ai-body">
-    <p class="ai-para">${formatted}</p>
+    <p class="ai-para">${safeReply}</p>
   </div>
   <div class="ai-footer hl-muted">
-    ─── powered by Gemini 1.5 Flash ───
+    ─── powered by Gemini 2.0 Flash ───
   </div>
 </div>`;
 }
 
-/** Minimal HTML entity escaper to prevent XSS from API responses. */
+/** Minimal HTML entity escaper to prevent XSS. */
 function escapeHtml(str) {
-  return str
+  return String(str)
     .replace(/&/g,  '&amp;')
     .replace(/</g,  '&lt;')
     .replace(/>/g,  '&gt;')
@@ -637,7 +615,9 @@ function appendOutput(node) {
 }
 
 function scrollBottom() {
-  output.scrollTop = output.scrollHeight;
+  if (output) {
+    output.scrollTop = output.scrollHeight;
+  }
 }
 
 /* ── Command parser ──────────────────────────────────────── */
@@ -651,10 +631,9 @@ function parseAndRun(raw) {
   echoDiv.textContent = `user@system:~$ ${trimmed}`;
   output.appendChild(echoDiv);
 
-  // Parse: split but respect quoted strings
   const tokens = tokenise(trimmed);
-  const cmd     = tokens[0].toLowerCase();
-  const args    = tokens.slice(1);
+  const cmd    = tokens[0].toLowerCase();
+  const args   = tokens.slice(1);
 
   if (COMMANDS[cmd]) {
     const result = COMMANDS[cmd](args);
@@ -700,7 +679,6 @@ function tabComplete(value) {
     if (matches.length === 1) {
       return matches[0] + ' ';
     } else if (matches.length > 1) {
-      // Print matches as hint
       const hint = document.createElement('div');
       hint.className = 'output-block';
       hint.innerHTML = matches.map(m =>
@@ -708,7 +686,6 @@ function tabComplete(value) {
       ).join('  ');
       output.appendChild(hint);
       scrollBottom();
-      // Return longest common prefix
       return longestCommonPrefix(matches);
     }
   } else if (parts[0].toLowerCase() === 'theme' && parts.length === 2) {
@@ -752,7 +729,6 @@ cmdInput.addEventListener('keydown', (e) => {
       if (historyIdx < history.length - 1) {
         historyIdx++;
         cmdInput.value = history[historyIdx];
-        // Move cursor to end
         requestAnimationFrame(() => {
           cmdInput.selectionStart = cmdInput.selectionEnd = cmdInput.value.length;
         });
@@ -803,8 +779,12 @@ cmdInput.addEventListener('keydown', (e) => {
 });
 
 /* ── Auto-focus on terminal click ────────────────────────── */
-document.getElementById('terminal-window').addEventListener('click', () => {
-  cmdInput.focus();
+const termWindow = document.getElementById('terminal-window') || document.getElementById('terminal-wrapper') || document.body;
+termWindow.addEventListener('click', (e) => {
+  // Don't steal focus if clicking an interactive link or button
+  if (e.target.tagName !== 'A' && e.target.tagName !== 'BUTTON') {
+    cmdInput.focus();
+  }
 });
 
 /* ── Mobile quick commands ───────────────────────────────── */
@@ -812,8 +792,8 @@ document.querySelectorAll('.qcmd').forEach(btn => {
   btn.addEventListener('click', () => {
     const cmd = btn.dataset.cmd;
 
-    // For the AI chip: pre-fill input and focus so user can type their question
-    if (cmd === 'ask ') {
+    // For the AI chip: pre-fill input and focus so user can type their prompt
+    if (cmd === 'ask ' || cmd === 'ask') {
       cmdInput.value = 'ask ';
       cmdInput.focus();
       return;
@@ -831,22 +811,23 @@ function printBanner() {
   const banner = document.createElement('div');
   banner.className = 'output-block';
   banner.innerHTML = `
-<pre class="banner-line" style="font-size:0.9em;">
- ███████╗ █████╗ ████████╗██╗   ██╗ █████╗
- ██╔════╝██╔══██╗╚══██╔══╝╚██╗ ██╔╝██╔══██╗
- ███████╗███████║   ██║    ╚████╔╝ ███████║
- ╚════██║██╔══██║   ██║     ╚██╔╝  ██╔══██║
- ███████║██║  ██║   ██║      ██║   ██║  ██║
- ╚══════╝╚═╝  ╚═╝   ╚═╝      ╚═╝   ╚═╝  ╚═╝
+<pre class="banner-line" style="font-size:clamp(8px, 1.1vw, 13px);line-height:1.2;overflow-x:auto;">
+ ███████╗ █████╗ ████████╗██╗   ██╗ █████╗     ██████╗ ███████╗██╗   ██╗
+ ██╔════╝██╔══██╗╚══██╔══╝╚██╗ ██╔╝██╔══██╗    ██╔══██╗██╔════╝██║   ██║
+ ███████╗███████║   ██║    ╚████╔╝ ███████║    ██║  ██║█████╗  ██║   ██║
+ ╚════██║██╔══██║   ██║     ╚██╔╝  ██╔══██║    ██║  ██║██╔══╝  ╚██╗ ██╔╝
+ ███████║██║  ██║   ██║      ██║   ██║  ██║    ██████╔╝███████╗ ╚████╔╝ 
+ ╚══════╝╚═╝  ╚═╝   ╚═╝      ╚═╝   ╚═╝  ╚═╝    ╚═════╝ ╚══════╝  ╚═══╝  
 </pre>
-<div style="color:var(--accent2);font-size:0.88em;letter-spacing:0.18em;margin:-4px 0 10px;text-shadow:0 0 10px var(--accent2-glow);">
-  ── TTY0 &nbsp;·&nbsp; INTERACTIVE PORTFOLIO TERMINAL ──
+<div style="color:var(--accent2);font-size:0.88em;letter-spacing:0.18em;margin:4px 0 10px;text-shadow:0 0 10px var(--accent2-glow);">
+  ── SATYA // DEV &nbsp;·&nbsp; TTY0 &nbsp;·&nbsp; INTERACTIVE PORTFOLIO TERMINAL ──
 </div>
 
 <div class="boot-log" style="color:var(--text-muted);font-size:0.82em;line-height:1.9;">
   <div><span style="color:var(--accent)">[ &nbsp;OK &nbsp;]</span> &nbsp;Loaded kernel modules &nbsp;<span style="color:var(--text-dim)">6.7.0-cyber-amd64</span></div>
   <div><span style="color:var(--accent)">[ &nbsp;OK &nbsp;]</span> &nbsp;Started CRT display driver &nbsp;<span style="color:var(--text-dim)">scanline@vga.service</span></div>
   <div><span style="color:var(--accent)">[ &nbsp;OK &nbsp;]</span> &nbsp;Mounted filesystem &nbsp;<span style="color:var(--text-dim)">/home/satya</span></div>
+  <div><span style="color:var(--accent)">[ &nbsp;OK &nbsp;]</span> &nbsp;Identity verification &nbsp;<span style="color:var(--text-dim)">Satya // Dev [ACTIVE]</span></div>
   <div><span style="color:var(--accent)">[ &nbsp;OK &nbsp;]</span> &nbsp;Reached target &nbsp;<span style="color:var(--text-dim)">Multi-User System</span></div>
   <div><span style="color:var(--warn)">[WARN ]</span> &nbsp;coffee.service: caffeination level low — please refill</div>
   <div><span style="color:var(--accent)">[ &nbsp;OK &nbsp;]</span> &nbsp;Portfolio shell ready &nbsp;<span style="color:var(--text-dim)">cysh 3.1.4 (interactive)</span></div>
@@ -860,18 +841,19 @@ function printBanner() {
   </span>
 </div>`;
   output.appendChild(banner);
+  scrollBottom();
 }
 
 /* ── Matrix Rain ─────────────────────────────────────────── */
 const canvas      = document.getElementById('matrix-canvas');
 const matrixClose = document.getElementById('matrix-close');
-const ctx         = canvas.getContext('2d');
+const ctx         = canvas ? canvas.getContext('2d') : null;
 
 function startMatrix() {
-  if (matrixActive) return;
+  if (matrixActive || !canvas || !ctx) return;
   matrixActive = true;
   canvas.style.display = 'block';
-  matrixClose.style.display = 'block';
+  if (matrixClose) matrixClose.style.display = 'block';
 
   canvas.width  = window.innerWidth;
   canvas.height = window.innerHeight;
@@ -886,7 +868,6 @@ function startMatrix() {
     ctx.fillStyle = 'rgba(0, 5, 0, 0.05)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Use accent colour from CSS var
     const accentVar = getComputedStyle(themeRoot).getPropertyValue('--accent').trim() || '#00ff41';
     ctx.fillStyle = accentVar;
     ctx.font      = `${fontSize}px monospace`;
@@ -903,22 +884,25 @@ function startMatrix() {
   }
   drawRain();
 
-  // Click-to-close
   canvas.addEventListener('click', stopMatrix, { once: true });
 }
 
 function stopMatrix() {
   matrixActive = false;
   if (matrixAnim) { cancelAnimationFrame(matrixAnim); matrixAnim = null; }
-  canvas.style.display    = 'none';
-  matrixClose.style.display = 'none';
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (canvas) {
+    canvas.style.display = 'none';
+    if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+  if (matrixClose) matrixClose.style.display = 'none';
 }
 
-matrixClose.addEventListener('click', stopMatrix);
+if (matrixClose) {
+  matrixClose.addEventListener('click', stopMatrix);
+}
 
 window.addEventListener('resize', () => {
-  if (matrixActive) {
+  if (matrixActive && canvas) {
     canvas.width  = window.innerWidth;
     canvas.height = window.innerHeight;
   }
@@ -932,10 +916,8 @@ document.addEventListener('keydown', (e) => {
 /* ── Init ────────────────────────────────────────────────── */
 (function init() {
   printBanner();
-  // Input row appears immediately after banner — focus it
   requestAnimationFrame(() => {
-    cmdInput.focus();
+    if (cmdInput) cmdInput.focus();
   });
-  // Kick uptime display
   if (uptimeEl) uptimeEl.textContent = uptime();
 })();
