@@ -14,7 +14,7 @@ function getGeminiApiKey() {
   return window.STREAMLIT_GEMINI_KEY || GEMINI_API_KEY || "";
 }
 
-function getGeminiEndpoint(key) {
+function getEndpoint(key) {
   return `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${encodeURIComponent(key)}`;
 }
 
@@ -84,7 +84,7 @@ const COMMANDS = {
   <tr><td class="cmd-name">banner</td>
       <td class="cmd-desc">Redisplay the welcome ASCII banner</td></tr>
   <tr><td class="cmd-name ai-cmd">ask / chat &lt;q&gt;</td>
-      <td class="cmd-desc"><span class="ai-badge">AI</span> Send a prompt to Gemini 2.0 Flash</td></tr>
+      <td class="cmd-desc"><span class="ai-badge">AI</span> Send a prompt to Gemini 3.8 Flash</td></tr>
 </table>
 <div class="hl-muted" style="margin-top:8px;font-size:0.85em;">
   ↑ / ↓ arrow keys — navigate history &nbsp;|&nbsp;
@@ -505,7 +505,7 @@ function runAIQuery(args) {
 <div class="ai-prefix">[AI CORE]</div>
 <div class="ai-loading">
   <span class="ai-spinner">◐</span>
-  <span class="ai-loading-text">Processing query with Gemini 2.0 Flash</span>
+  <span class="ai-loading-text">Processing query with Gemini 3.8 Flash</span>
   <span class="ai-dots"></span>
 </div>`;
   output.appendChild(loader);
@@ -570,7 +570,7 @@ function buildAIResponseHTML(prompt, reply) {
     <p class="ai-para">${safeReply}</p>
   </div>
   <div class="ai-footer hl-muted">
-    ─── powered by Gemini 2.0 Flash ───
+    ─── powered by Gemini 3.8 Flash ───
   </div>
 </div>`;
 }
