@@ -526,8 +526,7 @@ function runAIQuery(args) {
 const userText = (typeof prompt !== 'undefined' && prompt) || 
                  (typeof args !== 'undefined' && Array.isArray(args) ? args.join(' ') : args) || 
                  "Who are you";
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=${window.STREAMLIT_GEMINI_KEY || GEMINI_API_KEY}`, {
-
+      const res = await window.fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=${window.STREAMLIT_GEMINI_KEY || GEMINI_API_KEY}`, {
 method: "POST",
 
 headers: {
