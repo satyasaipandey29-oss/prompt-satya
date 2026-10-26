@@ -523,30 +523,47 @@ function runAIQuery(args) {
   (async (queryText) => {
     try {
       // Grab the question directly from whatever was typed after "ask"
-const userText = (typeof prompt !== 'undefined' && prompt) || 
-                 (typeof args !== 'undefined' && Array.isArray(args) ? args.join(' ') : args) || 
-                 "Who are you";
-      const res = await window.fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=${window.STREAMLIT_GEMINI_KEY || GEMINI_API_KEY}`, {
-method: "POST",
+// Use native XMLHttpRequest
+            const apiKey = window.STREAMLIT_GEMINI_KEY || GEMINI_API_KEY || "";
+            const endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=" + apiKey;
 
-headers: {
+            // Extract the user prompt safely
+            const userQuestion = (typeof args !== 'undefined' && Array.isArray(args)) ? args.join(' ') : 
+                                 (typeof args !== 'undefined' ? String(args) : "Who are you");
 
-"Content-Type": "application/json"
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", endpoint, true);
+            xhr.setRequestHeader("Content-Type", "application/json");
 
-},
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    // Re-enable input
+                    cmdInput.disabled = false;
+                    if (loader && loader.parentNode) loader.remove();
 
-body: JSON.stringify({
+                    if (xhr.status === 200) {
+                        try {
+                            const data = JSON.parse(xhr.responseText);
+                            const reply = data.candidates[0].content.parts[0].text;
+                            text(reply);
+                        } catch (e) {
+                            errorBlock("Error parsing response: " + e.message);
+                        }
+                    } else {
+                        errorBlock("HTTP " + xhr.status + ": " + xhr.responseText);
+                    }
+                    scrollBottom();
+                    cmdInput.focus();
+                }
+            };
 
-contents: [{
+            const payload = JSON.stringify({
+                contents: [{
+                    parts: [{ text: userQuestion }]
+                }]
+            });
 
-parts: [{ text: String(userText) }]
-
-}]
-
-})
-
-})(userText); 
-
+            xhr.send(payload);      
       if (!res.ok) {
         const errBody = await res.text();
         throw new Error(`HTTP ${res.status}: ${errBody}`);
