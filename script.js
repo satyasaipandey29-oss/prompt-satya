@@ -10,7 +10,7 @@
 //     key from https://aistudio.google.com/app/apikey
 //     Never commit a real key to a public repository.
 // ─────────────────────────────────────────────────────────────
-const GEMINI_API_KEY = 'YOUR_API_KEY';
+const GEMINI_API_KEY = window.STREAMLIT_GEMINI_KEY || "";
 const GEMINI_ENDPOINT =
   `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
@@ -493,7 +493,7 @@ function runAIQuery(args) {
   }
 
   // Guard: key not configured
-  if (!GEMINI_API_KEY || GEMINI_API_KEY === 'YOUR_API_KEY') {
+  if (!GEMINI_API_KEY || GEMINI_API_KEY === 'YOUR_API_KEY'||GEMINI_API_KEY=='') {
     return html(`
 <div class="hl-error">[AI CORE ERROR]: No API key configured.</div>
 <div class="hl-muted" style="font-size:0.85em;margin-top:4px">
