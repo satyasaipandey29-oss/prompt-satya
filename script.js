@@ -520,7 +520,7 @@ function runAIQuery(args) {
   cmdInput.disabled = true;
 
   // ── Async Gemini fetch ────────────────────────────────────
-  (async () => {
+  (async (queryText) => {
     try {
       const userText = typeof prompt !== 'undefined' ? prompt : (typeof args !== 'undefined' ? args : (typeof input !== 'undefined' ? input : 'hello'));
       const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=${window.STREAMLIT_GEMINI_KEY || GEMINI_API_KEY}`, {
@@ -543,7 +543,7 @@ parts: [{ text: userText }]
 
 })
 
-}); 
+})(userText); 
 
       if (!res.ok) {
         const errBody = await res.text();
