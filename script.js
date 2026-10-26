@@ -424,9 +424,9 @@ const COMMANDS = {
     .______.
     |      |]
     \\      /
-     \`----'
+     \`----\`
 </pre>
-<span class="hl-muted">☕ Here's your virtual coffee. Compile and debug responsibly.</span>
+<span class="hl-muted">&#9749; Here's your virtual coffee. Compile and debug responsibly.</span>
 `);
   },
 
@@ -469,8 +469,6 @@ const COMMANDS = {
     return runAIQuery(args);
   },
 };
-
-}; // end COMMANDS
 
 /* ─────────────────────────────────────────────────────────── */
 /*  GEMINI AI CORE                                             */
