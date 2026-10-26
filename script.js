@@ -516,7 +516,7 @@ function runAIQuery(args) {
   // Asynchronous query execution
   (async () => {
     try {
-      const endpoint = getGeminiEndpoint(apiKey);
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${window.STREAMLIT_GEMINI_KEY || GEMINI_API_KEY}`;
       const res = await fetch(endpoint, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
