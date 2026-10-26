@@ -3,7 +3,6 @@ import streamlit.components.v1 as components
 
 st.set_page_config(page_title="Prompt Satya", layout="wide", initial_sidebar_state="collapsed")
 
-# Hide standard Streamlit header and padding
 st.markdown("""
 <style>
     #MainMenu, header, footer {visibility: hidden;}
@@ -12,18 +11,40 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 1. Fetch secret safely
+# 1. Fetch secret key safely
 api_key = st.secrets.get("GEMINI_API_KEY", "")
 
-# 2. Read index.html safely without f-string corruption
+# 2. Read all files directly from the repository
 with open("index.html", "r", encoding="utf-8") as f:
-    html_content = f.read()
+    html = f.read()
 
-# 3. Inject key cleanly before </head>
-injection = f"<script>window.STREAMLIT_GEMINI_KEY = '{api_key}';</script>\n</head>"
-if "</head>" in html_content:
-    final_html = html_content.replace("</head>", injection, 1)
+with open("style.css", "r", encoding="utf-8") as f:
+    css = f.read()
+
+with open("script.js", "r", encoding="utf-8") as f:
+    js = f.read()
+
+# 3. Inject CSS, Key, and JS directly into the document
+injection = f"""
+<style>
+{css}
+</style>
+<script>
+window.STREAMLIT_GEMINI_KEY = '{api_key}';
+</script>
+</head>
+"""
+
+# Replace the head tag with inline styles & config
+if "</head>" in html:
+    html = html.replace("</head>", injection, 1)
 else:
-    final_html = f"<script>window.STREAMLIT_GEMINI_KEY = '{api_key}';</script>" + html_content
+    html = injection + html
 
-components.html(final_html, height=900, scrolling=True)
+# Inject the full script before the closing body tag
+if "</body>" in html:
+    html = html.replace("</body>", f"<script>\n{js}\n</script>\n</body>", 1)
+else:
+    html = html + f"<script>\n{js}\n</script>"
+
+components.html(html, height=900, scrolling=True)
