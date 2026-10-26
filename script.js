@@ -5,6 +5,15 @@
 
 'use strict';
 
+// ── AI Configuration ─────────────────────────────────────────
+// ⚠️  REPLACE "YOUR_API_KEY" below with your actual Gemini API
+//     key from https://aistudio.google.com/app/apikey
+//     Never commit a real key to a public repository.
+// ─────────────────────────────────────────────────────────────
+const GEMINI_API_KEY = 'YOUR_API_KEY';
+const GEMINI_ENDPOINT =
+  `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+
 /* ── Uptime clock ─────────────────────────────────────────── */
 const BOOT_TIME = Date.now();
 function uptime() {
@@ -70,6 +79,8 @@ const COMMANDS = {
       <td class="cmd-desc">Session uptime</td></tr>
   <tr><td class="cmd-name">banner</td>
       <td class="cmd-desc">Redisplay the welcome ASCII banner</td></tr>
+  <tr><td class="cmd-name ai-cmd">ask / chat &lt;q&gt;</td>
+      <td class="cmd-desc"><span class="ai-badge">AI</span> Send a question to the Gemini AI core</td></tr>
 </table>
 <div class="hl-muted" style="margin-top:8px;font-size:0.85em;">
   ↑ / ↓ arrow keys — navigate history &nbsp;|&nbsp;
@@ -449,7 +460,155 @@ const COMMANDS = {
 <div class="hl-accent">3 packets transmitted, 3 received, 0% packet loss</div>
 `);
   },
+
+  /* ── ask / chat — Gemini AI core ─────────────────────── */
+  ask(args) {
+    return runAIQuery(args);
+  },
+  chat(args) {
+    return runAIQuery(args);
+  },
 };
+
+}; // end COMMANDS
+
+/* ─────────────────────────────────────────────────────────── */
+/*  GEMINI AI CORE                                             */
+/* ─────────────────────────────────────────────────────────── */
+
+/**
+ * runAIQuery — validates the prompt, shows a loading node, fires
+ * the Gemini API fetch asynchronously, then replaces / appends
+ * the response into the terminal without blocking the UI.
+ *
+ * Returns a loading DOM node immediately (synchronous); the async
+ * response is injected later and the terminal is scrolled again.
+ */
+function runAIQuery(args) {
+  // Edge-case: no prompt provided
+  if (!args.length || !args.join(' ').trim()) {
+    return html(`
+<div class="hl-warn">Usage: <span class="hl-accent">ask &lt;your question or prompt&gt;</span></div>
+<div class="hl-muted" style="font-size:0.85em;margin-top:3px">
+  Example: <span class="hl-accent">ask What is a Merkle tree?</span>
+</div>`);
+  }
+
+  // Guard: key not configured
+  if (!GEMINI_API_KEY || GEMINI_API_KEY === 'YOUR_API_KEY') {
+    return html(`
+<div class="hl-error">[AI CORE ERROR]: No API key configured.</div>
+<div class="hl-muted" style="font-size:0.85em;margin-top:4px">
+  Open <span class="hl-accent">script.js</span> and replace
+  <span class="hl-accent">YOUR_API_KEY</span> with your Gemini key from
+  <a href="https://aistudio.google.com/app/apikey" target="_blank"
+     rel="noopener" style="color:var(--accent2)">aistudio.google.com</a>.
+</div>`);
+  }
+
+  const userPrompt = args.join(' ').trim();
+
+  // ── Loading node (injected immediately) ───────────────────
+  const loader = document.createElement('div');
+  loader.className = 'output-block ai-loader';
+  loader.innerHTML = `
+<div class="ai-prefix">[AI CORE]</div>
+<div class="ai-loading">
+  <span class="ai-spinner">◐</span>
+  <span class="ai-loading-text">Processing query</span>
+  <span class="ai-dots"></span>
+</div>`;
+  output.appendChild(loader);
+  scrollBottom();
+
+  // Disable input while waiting
+  cmdInput.disabled = true;
+
+  // ── Async Gemini fetch ────────────────────────────────────
+  (async () => {
+    try {
+      const res = await fetch(GEMINI_ENDPOINT, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: userPrompt }] }],
+        }),
+      });
+
+      if (!res.ok) {
+        const errBody = await res.text();
+        throw new Error(`HTTP ${res.status}: ${errBody}`);
+      }
+
+      const data = await res.json();
+
+      // Safe extraction — walk the response tree defensively
+      const reply =
+        data?.candidates?.[0]?.content?.parts?.[0]?.text
+        ?? '[AI CORE]: Empty response received.';
+
+      // Replace loader with the formatted response
+      loader.outerHTML = buildAIResponseHTML(userPrompt, reply);
+
+    } catch (err) {
+      console.error('[AI CORE]', err);
+      loader.outerHTML = `
+<div class="output-block ai-response error">
+  <div class="ai-prefix error">[AI CORE ERROR]</div>
+  <div class="ai-body hl-error">
+    Failed to fetch response. Verify your API configuration.
+  </div>
+  <div class="ai-meta hl-muted" style="font-size:0.78em;margin-top:4px">
+    ${escapeHtml(String(err.message).slice(0, 200))}
+  </div>
+</div>`;
+    } finally {
+      cmdInput.disabled = false;
+      cmdInput.focus();
+      scrollBottom();
+    }
+  })();
+
+  // Return null — the loader was appended directly above
+  return null;
+}
+
+/** Build the styled HTML block for a successful AI reply. */
+function buildAIResponseHTML(prompt, reply) {
+  // Convert newlines to <br> and escape HTML in the reply body
+  const safeReply = escapeHtml(reply)
+    .replace(/\n{2,}/g, '</p><p class="ai-para">')  // double-newline → paragraph
+    .replace(/\n/g, '<br>');                          // single newline → line break
+
+  // Light markdown-ish highlighting: **bold** and `code`
+  const formatted = safeReply
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/`([^`]+)`/g, '<code class="ai-code">$1</code>');
+
+  return `
+<div class="output-block ai-response">
+  <div class="ai-header">
+    <span class="ai-prefix">[SATYA-AI]</span>
+    <span class="ai-query-label hl-muted"> ↳ ${escapeHtml(prompt.slice(0, 80))}${prompt.length > 80 ? '…' : ''}</span>
+  </div>
+  <div class="ai-body">
+    <p class="ai-para">${formatted}</p>
+  </div>
+  <div class="ai-footer hl-muted">
+    ─── powered by Gemini 1.5 Flash ───
+  </div>
+</div>`;
+}
+
+/** Minimal HTML entity escaper to prevent XSS from API responses. */
+function escapeHtml(str) {
+  return str
+    .replace(/&/g,  '&amp;')
+    .replace(/</g,  '&lt;')
+    .replace(/>/g,  '&gt;')
+    .replace(/"/g,  '&quot;')
+    .replace(/'/g,  '&#39;');
+}
 
 /* ── Helper: create html output node ────────────────────── */
 function html(innerHtml) {
@@ -655,6 +814,14 @@ document.getElementById('terminal-window').addEventListener('click', () => {
 document.querySelectorAll('.qcmd').forEach(btn => {
   btn.addEventListener('click', () => {
     const cmd = btn.dataset.cmd;
+
+    // For the AI chip: pre-fill input and focus so user can type their question
+    if (cmd === 'ask ') {
+      cmdInput.value = 'ask ';
+      cmdInput.focus();
+      return;
+    }
+
     cmdInput.value = cmd;
     parseAndRun(cmd);
     cmdInput.value = '';
