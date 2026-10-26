@@ -522,7 +522,10 @@ function runAIQuery(args) {
   // ── Async Gemini fetch ────────────────────────────────────
   (async (queryText) => {
     try {
-      const userText = typeof prompt !== 'undefined' ? prompt : (typeof args !== 'undefined' ? args : (typeof input !== 'undefined' ? input : 'hello'));
+      // Grab the question directly from whatever was typed after "ask"
+const userText = (typeof prompt !== 'undefined' && prompt) || 
+                 (typeof args !== 'undefined' && Array.isArray(args) ? args.join(' ') : args) || 
+                 "Who are you";
       const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=${window.STREAMLIT_GEMINI_KEY || GEMINI_API_KEY}`, {
 
 method: "POST",
@@ -537,7 +540,7 @@ body: JSON.stringify({
 
 contents: [{
 
-parts: [{ text: userText }]
+parts: [{ text: String(userText) }]
 
 }]
 
