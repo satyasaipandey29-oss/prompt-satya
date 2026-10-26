@@ -520,51 +520,7 @@ function runAIQuery(args) {
   cmdInput.disabled = true;
 
   // ── Async Gemini fetch ────────────────────────────────────
-  (async (queryText) => {
-    try {
-      // Grab the question directly from whatever was typed after "ask"
-// Use native XMLHttpRequest
-            const apiKey = window.STREAMLIT_GEMINI_KEY || GEMINI_API_KEY || "";
-            const endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=" + apiKey;
-
-            // Extract the user prompt safely
-            const userQuestion = (typeof args !== 'undefined' && Array.isArray(args)) ? args.join(' ') : 
-                                 (typeof args !== 'undefined' ? String(args) : "Who are you");
-
-            const xhr = new XMLHttpRequest();
-            xhr.open("POST", endpoint, true);
-            xhr.setRequestHeader("Content-Type", "application/json");
-
-            xhr.onreadystatechange = function () {
-                if (xhr.readyState === 4) {
-                    // Re-enable input
-                    cmdInput.disabled = false;
-                    if (loader && loader.parentNode) loader.remove();
-
-                    if (xhr.status === 200) {
-                        try {
-                            const data = JSON.parse(xhr.responseText);
-                            const reply = data.candidates[0].content.parts[0].text;
-                            text(reply);
-                        } catch (e) {
-                            errorBlock("Error parsing response: " + e.message);
-                        }
-                    } else {
-                        errorBlock("HTTP " + xhr.status + ": " + xhr.responseText);
-                    }
-                    scrollBottom();
-                    cmdInput.focus();
-                }
-            };
-
-            const payload = JSON.stringify({
-                contents: [{
-                    parts: [{ text: userQuestion }]
-                }]
-            });
-
-            xhr.send(payload);      
-     const queryText = (typeof args !== 'undefined' && Array.isArray(args)) ? args.join(' ') : 
+ const queryText = (typeof args !== 'undefined' && Array.isArray(args)) ? args.join(' ') : 
                           (typeof args !== 'undefined' && args ? String(args) : '');
 
         if (!queryText.trim()) {
@@ -575,6 +531,56 @@ function runAIQuery(args) {
                 </div>
             `));
             return;
+        }
+
+        const apiKey = window.STREAMLIT_GEMINI_KEY || (typeof GEMINI_API_KEY !== 'undefined' ? GEMINI_API_KEY : '');
+        if (!apiKey) {
+            output.appendChild(errorBlock("[AI CORE ERROR]: No API key configured. Check Streamlit Secrets."));
+            return;
+        }
+
+        const loader = document.createElement('div');
+        loader.className = 'output-block';
+        loader.innerHTML = '<span style="color: var(--color-accent);">[AI CORE]</span> Thinking<span class="blink">...</span>';
+        output.appendChild(loader);
+        scrollBottom();
+
+        cmdInput.disabled = true;
+
+        const endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=" + apiKey;
+
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", endpoint, true);
+        xhr.setRequestHeader("Content-Type", "application/json");
+
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4) {
+                cmdInput.disabled = false;
+                if (loader && loader.parentNode) loader.remove();
+
+                if (xhr.status === 200) {
+                    try {
+                        const data = JSON.parse(xhr.responseText);
+                        const reply = data.candidates[0].content.parts[0].text;
+                        output.appendChild(html(`<div class="output-block" style="white-space: pre-wrap; line-height: 1.5;"><span style="color: var(--color-accent); font-weight: bold;">[GEMINI]</span>\n${reply}</div>`));
+                    } catch (e) {
+                        output.appendChild(errorBlock("Error parsing response: " + e.message));
+                    }
+                } else {
+                    output.appendChild(errorBlock("HTTP " + xhr.status + ": " + xhr.responseText));
+                }
+                scrollBottom();
+                cmdInput.focus();
+            }
+        };
+
+        const payload = JSON.stringify({
+            contents: [{
+                parts: [{ text: queryText }]
+            }]
+        });
+
+        xhr.send(payload);            return;
         }
 
         const apiKey = window.STREAMLIT_GEMINI_KEY || (typeof GEMINI_API_KEY !== 'undefined' ? GEMINI_API_KEY : '');
