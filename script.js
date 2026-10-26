@@ -564,40 +564,62 @@ function runAIQuery(args) {
             });
 
             xhr.send(payload);      
-      if (!res.ok) {
-        const errBody = await res.text();
-        throw new Error(`HTTP ${res.status}: ${errBody}`);
-      }
+     const queryText = (typeof args !== 'undefined' && Array.isArray(args)) ? args.join(' ') : 
+                          (typeof args !== 'undefined' && args ? String(args) : '');
 
-      const data = await res.json();
+        if (!queryText.trim()) {
+            output.appendChild(html(`
+                <div class="output-block">
+                    <span style="color: var(--color-warn);">Usage:</span> ask <your question or prompt><br>
+                    <span style="color: var(--color-text-dim);">Example: ask What is a Merkle tree?</span>
+                </div>
+            `));
+            return;
+        }
 
-      // Safe extraction — walk the response tree defensively
-      const reply =
-        data?.candidates?.[0]?.content?.parts?.[0]?.text
-        ?? '[AI CORE]: Empty response received.';
+        const apiKey = window.STREAMLIT_GEMINI_KEY || (typeof GEMINI_API_KEY !== 'undefined' ? GEMINI_API_KEY : '');
+        if (!apiKey) {
+            output.appendChild(errorBlock("[AI CORE ERROR]: No API key configured. Check Streamlit Secrets."));
+            return;
+        }
 
-      // Replace loader with the formatted response
-      loader.outerHTML = buildAIResponseHTML(userPrompt, reply);
+        const loader = document.createElement('div');
+        loader.className = 'output-block';
+        loader.innerHTML = '<span style="color: var(--color-accent);">[AI CORE]</span> Thinking<span class="blink">...</span>';
+        output.appendChild(loader);
+        scrollBottom();
 
-    } catch (err) {
-      console.error('[AI CORE]', err);
-      loader.outerHTML = `
-<div class="output-block ai-response error">
-  <div class="ai-prefix error">[AI CORE ERROR]</div>
-  <div class="ai-body hl-error">
-    Failed to fetch response. Verify your API configuration.
-  </div>
-  <div class="ai-meta hl-muted" style="font-size:0.78em;margin-top:4px">
-    ${escapeHtml(String(err.message).slice(0, 200))}
-  </div>
-</div>`;
-    } finally {
-      cmdInput.disabled = false;
-      cmdInput.focus();
-      scrollBottom();
-    }
-  })();
+        cmdInput.disabled = true;
 
+        (async () => {
+            try {
+                const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=${apiKey}`;
+                const res = await window.fetch(endpoint, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: queryText }] }]
+                    })
+                });
+
+                const data = await res.json();
+                loader.remove();
+
+                if (res.ok) {
+                    const aiReply = data.candidates?.[0]?.content?.parts?.[0]?.text || "No response received.";
+                    output.appendChild(html(`<div class="output-block" style="white-space: pre-wrap; line-height: 1.5;"><span style="color: var(--color-accent); font-weight: bold;">[GEMINI]</span>\n${aiReply}</div>`));
+                } else {
+                    output.appendChild(errorBlock(`[AI CORE ERROR] HTTP ${res.status}: ${data.error?.message || JSON.stringify(data)}`));
+                }
+            } catch (err) {
+                if (loader && loader.parentNode) loader.remove();
+                output.appendChild(errorBlock(`[AI CORE ERROR] ${err.message}`));
+            } finally {
+                cmdInput.disabled = false;
+                scrollBottom();
+                cmdInput.focus();
+            }
+        })();
   // Return null — the loader was appended directly above
   return null;
 }
