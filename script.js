@@ -11,10 +11,7 @@
 //     Never commit a real key to a public repository.
 // ─────────────────────────────────────────────────────────────
 const GEMINI_API_KEY = window.STREAMLIT_GEMINI_KEY || "";
-
-// Build the endpoint dynamically inside your ask/query function:
-const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-001:generateContent?key=${window.STREAMLIT_GEMINI_KEY || GEMINI_API_KEY}`;
-/* ── Uptime clock ─────────────────────────────────────────── */
+const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;/* ── Uptime clock ─────────────────────────────────────────── */
 const BOOT_TIME = Date.now();
 function uptime() {
   const s = Math.floor((Date.now() - BOOT_TIME) / 1000);
