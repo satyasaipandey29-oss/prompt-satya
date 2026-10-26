@@ -12,8 +12,7 @@
 // ─────────────────────────────────────────────────────────────
 const GEMINI_API_KEY = window.STREAMLIT_GEMINI_KEY || "";
 const GEMINI_ENDPOINT =
-  `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-
+  `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 /* ── Uptime clock ─────────────────────────────────────────── */
 const BOOT_TIME = Date.now();
 function uptime() {
