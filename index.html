@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="neon">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="Cyberpunk retro hacker terminal — interactive portfolio &amp; playground" />
+  <meta name="theme-color" content="#0d1117" />
+
+  <title>CYBERTERM &mdash; user@system:~$</title>
+
+  <!-- Google Fonts — JetBrains Mono (self-hostable subset inlined as @font-face below) -->
+  <!-- Using system monospace as graceful fallback — no external dependency required -->
+  <style>
+    /* Optional: swap for a CDN font if network is available */
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Fira+Code:wght@400;600&display=swap');
+  </style>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+<div id="app">
+
+  <!-- ═══════════════════════════════════════════════════════
+       HEADER
+  ═══════════════════════════════════════════════════════ -->
+  <header id="header">
+
+    <!-- macOS / Linux window chrome row -->
+    <div class="header-chrome">
+      <div class="chrome-dots">
+        <span class="dot close"  title="Close"></span>
+        <span class="dot min"    title="Minimise"></span>
+        <span class="dot max"    title="Maximise"></span>
+      </div>
+
+      <div class="window-title">CYBERTERM &nbsp;—&nbsp; Secure Shell &nbsp;//&nbsp; v1.0</div>
+
+      <div class="header-status">
+        <div class="status-item">
+          <span class="status-dot"></span>
+          <span>ONLINE</span>
+        </div>
+        <div class="status-item">
+          <span>🔒 TLS 1.3</span>
+        </div>
+        <div class="status-item">
+          <span>SSH-2.0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Session info row -->
+    <div class="header-info">
+      <span class="session-prompt">user@system:~$</span>
+
+      <div class="session-meta">
+        <div class="meta-tag">
+          <span class="label">OS&nbsp;</span>
+          <span class="value">CyberOS 6.7.0-lts</span>
+        </div>
+        <div class="meta-tag">
+          <span class="label">SHELL&nbsp;</span>
+          <span class="value">cysh 3.1.4</span>
+        </div>
+        <div class="meta-tag">
+          <span class="label">UP&nbsp;</span>
+          <span class="value" id="uptime-val">00:00:00</span>
+        </div>
+        <div class="meta-tag">
+          <span class="label">TERM&nbsp;</span>
+          <span class="value">xterm-256color</span>
+        </div>
+        <div class="meta-tag">
+          <span class="label">COLS&nbsp;</span>
+          <span class="value" id="cols-val">80</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════════════════════
+       TERMINAL BODY
+  ═══════════════════════════════════════════════════════ -->
+  <main id="terminal-wrapper">
+
+    <!-- Output area -->
+    <div id="output" role="log" aria-live="polite" aria-label="Terminal output"></div>
+
+    <!-- Input row -->
+    <div id="input-row">
+      <span class="input-prompt">user@system:~$&nbsp;</span>
+      <input
+        id="cmd-input"
+        type="text"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck="false"
+        aria-label="Terminal command input"
+        placeholder=""
+      />
+      <span class="cursor-block" aria-hidden="true"></span>
+    </div>
+
+    <!-- Mobile quick-command chips -->
+    <nav id="quick-cmds" aria-label="Quick commands">
+      <button class="qcmd" data-cmd="help">help</button>
+      <button class="qcmd" data-cmd="whoami">whoami</button>
+      <button class="qcmd" data-cmd="skills">skills</button>
+      <button class="qcmd" data-cmd="projects">projects</button>
+      <button class="qcmd" data-cmd="contact">contact</button>
+      <button class="qcmd" data-cmd="theme neon">neon</button>
+      <button class="qcmd" data-cmd="theme matrix">matrix</button>
+      <button class="qcmd" data-cmd="theme amber">amber</button>
+      <button class="qcmd" data-cmd="theme dracula">dracula</button>
+      <button class="qcmd" data-cmd="quote">quote</button>
+      <button class="qcmd" data-cmd="matrix">rain</button>
+      <button class="qcmd" data-cmd="clear">clear</button>
+    </nav>
+  </main>
+
+  <!-- ═══════════════════════════════════════════════════════
+       MATRIX RAIN OVERLAY
+  ═══════════════════════════════════════════════════════ -->
+  <canvas id="matrix-canvas" aria-hidden="true"></canvas>
+  <button id="matrix-close" aria-label="Exit matrix mode">[ ESC ] EXIT MATRIX</button>
+
+</div><!-- /#app -->
+
+<!-- ═══════════════════════════════════════════════════════
+     Dynamic column count (cosmetic header stat)
+═══════════════════════════════════════════════════════ -->
+<script>
+  (function () {
+    const colsEl = document.getElementById('cols-val');
+    function updateCols() {
+      if (colsEl) {
+        const termEl = document.getElementById('output');
+        const charW  = parseFloat(getComputedStyle(termEl).fontSize) * 0.6;
+        const cols   = Math.floor(termEl.clientWidth / charW);
+        colsEl.textContent = Math.max(40, Math.min(220, cols));
+      }
+    }
+    window.addEventListener('resize', updateCols);
+    window.addEventListener('DOMContentLoaded', updateCols);
+  })();
+</script>
+
+<script src="script.js"></script>
+</body>
+</html>

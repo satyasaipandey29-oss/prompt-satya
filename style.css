@@ -1,0 +1,585 @@
+/* ============================================================
+   CYBERPUNK TERMINAL — style.css
+   Zero external dependencies. Pure CSS with CSS custom
+   properties for theme-switching.
+   ============================================================ */
+
+/* ── Themes ─────────────────────────────────────────────── */
+:root,
+[data-theme="neon"] {
+  --bg-primary:    #0d1117;
+  --bg-secondary:  #0a0e14;
+  --bg-terminal:   #050a0f;
+  --accent:        #00ff41;
+  --accent-dim:    #00cc33;
+  --accent-glow:   rgba(0, 255, 65, 0.35);
+  --accent2:       #00e5ff;
+  --accent2-glow:  rgba(0, 229, 255, 0.25);
+  --text-primary:  #e0ffe8;
+  --text-muted:    #4a7a55;
+  --text-dim:      #2a4a35;
+  --error:         #ff4444;
+  --warn:          #ffcc00;
+  --dot-close:     #ff5f57;
+  --dot-min:       #febc2e;
+  --dot-max:       #28c840;
+  --scanline-op:   0.07;
+  --crt-flicker:   1;
+}
+
+[data-theme="matrix"] {
+  --bg-primary:    #000000;
+  --bg-secondary:  #020802;
+  --bg-terminal:   #000500;
+  --accent:        #00ff00;
+  --accent-dim:    #008800;
+  --accent-glow:   rgba(0, 255, 0, 0.4);
+  --accent2:       #39ff14;
+  --accent2-glow:  rgba(57, 255, 20, 0.3);
+  --text-primary:  #ccffcc;
+  --text-muted:    #336633;
+  --text-dim:      #1a331a;
+  --error:         #ff2222;
+  --warn:          #aaff00;
+  --dot-close:     #ff5f57;
+  --dot-min:       #febc2e;
+  --dot-max:       #28c840;
+  --scanline-op:   0.12;
+  --crt-flicker:   1;
+}
+
+[data-theme="amber"] {
+  --bg-primary:    #0d0900;
+  --bg-secondary:  #100b00;
+  --bg-terminal:   #080500;
+  --accent:        #ffb300;
+  --accent-dim:    #cc8800;
+  --accent-glow:   rgba(255, 179, 0, 0.35);
+  --accent2:       #ff6f00;
+  --accent2-glow:  rgba(255, 111, 0, 0.25);
+  --text-primary:  #fff3cc;
+  --text-muted:    #7a5a00;
+  --text-dim:      #3a2a00;
+  --error:         #ff4444;
+  --warn:          #ff9900;
+  --dot-close:     #ff5f57;
+  --dot-min:       #febc2e;
+  --dot-max:       #28c840;
+  --scanline-op:   0.08;
+  --crt-flicker:   1;
+}
+
+[data-theme="dracula"] {
+  --bg-primary:    #0d0d1a;
+  --bg-secondary:  #11112a;
+  --bg-terminal:   #080818;
+  --accent:        #bd93f9;
+  --accent-dim:    #9966cc;
+  --accent-glow:   rgba(189, 147, 249, 0.35);
+  --accent2:       #ff79c6;
+  --accent2-glow:  rgba(255, 121, 198, 0.25);
+  --text-primary:  #f8f8f2;
+  --text-muted:    #6272a4;
+  --text-dim:      #44475a;
+  --error:         #ff5555;
+  --warn:          #f1fa8c;
+  --dot-close:     #ff5f57;
+  --dot-min:       #febc2e;
+  --dot-max:       #28c840;
+  --scanline-op:   0.06;
+  --crt-flicker:   0;
+}
+
+/* ── Reset & Base ────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', Courier, monospace;
+  font-size: clamp(12px, 1.4vw, 15px);
+  overflow: hidden;
+}
+
+/* ── App Shell ───────────────────────────────────────────── */
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  background: var(--bg-primary);
+  position: relative;
+}
+
+/* ── CRT Scanlines Overlay ───────────────────────────────── */
+#app::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 2px,
+    rgba(0, 0, 0, var(--scanline-op)) 2px,
+    rgba(0, 0, 0, var(--scanline-op)) 4px
+  );
+  pointer-events: none;
+  z-index: 9998;
+}
+
+/* ── CRT Vignette ────────────────────────────────────────── */
+#app::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at center,
+    transparent 55%,
+    rgba(0,0,0,0.65) 100%
+  );
+  pointer-events: none;
+  z-index: 9997;
+}
+
+/* ── Header Bar ──────────────────────────────────────────── */
+#header {
+  flex-shrink: 0;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--accent-dim);
+  box-shadow: 0 1px 12px var(--accent-glow);
+  padding: 0;
+  z-index: 100;
+  user-select: none;
+}
+
+.header-chrome {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px 8px;
+  gap: 12px;
+  border-bottom: 1px solid var(--text-dim);
+}
+
+.chrome-dots {
+  display: flex;
+  gap: 7px;
+  flex-shrink: 0;
+}
+
+.dot {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  cursor: default;
+  transition: filter 0.2s;
+}
+.dot:hover { filter: brightness(1.4); }
+.dot.close  { background: var(--dot-close); }
+.dot.min    { background: var(--dot-min); }
+.dot.max    { background: var(--dot-max); }
+
+.window-title {
+  flex: 1;
+  text-align: center;
+  font-size: 0.78em;
+  color: var(--text-muted);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.header-status {
+  display: flex;
+  gap: 14px;
+  font-size: 0.72em;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse 2.5s ease-in-out infinite;
+}
+
+.header-info {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 6px 16px 8px;
+  font-size: 0.76em;
+  flex-wrap: wrap;
+}
+
+.session-prompt {
+  color: var(--accent);
+  font-weight: bold;
+  text-shadow: 0 0 8px var(--accent-glow);
+}
+
+.session-meta {
+  color: var(--text-muted);
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.meta-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.meta-tag .label { color: var(--text-dim); }
+.meta-tag .value { color: var(--accent2); }
+
+/* ── Terminal Body ───────────────────────────────────────── */
+#terminal-wrapper {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+#output {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 20px 10px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-dim) transparent;
+}
+
+#output::-webkit-scrollbar { width: 5px; }
+#output::-webkit-scrollbar-track { background: transparent; }
+#output::-webkit-scrollbar-thumb {
+  background: var(--accent-dim);
+  border-radius: 3px;
+}
+
+/* ── Output Lines ────────────────────────────────────────── */
+.output-block {
+  margin-bottom: 14px;
+  line-height: 1.65;
+  animation: fadein 0.18s ease;
+}
+
+.output-block.command-echo {
+  color: var(--accent);
+  text-shadow: 0 0 6px var(--accent-glow);
+}
+
+.output-block.error { color: var(--error); }
+.output-block.warn  { color: var(--warn); }
+
+.output-block pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: inherit;
+}
+
+/* ASCII art / banner */
+.banner-line {
+  color: var(--accent);
+  text-shadow: 0 0 10px var(--accent-glow);
+  line-height: 1.25;
+  white-space: pre;
+}
+
+/* Help table */
+.cmd-table { border-collapse: collapse; width: 100%; max-width: 620px; }
+.cmd-table td { padding: 3px 14px 3px 0; vertical-align: top; }
+.cmd-table .cmd-name {
+  color: var(--accent);
+  white-space: nowrap;
+  font-weight: bold;
+  text-shadow: 0 0 5px var(--accent-glow);
+  min-width: 140px;
+}
+.cmd-table .cmd-desc { color: var(--text-muted); }
+
+/* Skill bars */
+.skill-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 3px 0;
+}
+.skill-name {
+  width: 160px;
+  flex-shrink: 0;
+  color: var(--accent2);
+  font-size: 0.9em;
+}
+.skill-bar-track {
+  flex: 1;
+  max-width: 220px;
+  height: 8px;
+  background: var(--text-dim);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.skill-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+  border-radius: 4px;
+  box-shadow: 0 0 6px var(--accent-glow);
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.skill-pct { color: var(--text-muted); font-size: 0.82em; min-width: 34px; }
+
+/* Section headers within output */
+.section-header {
+  color: var(--accent2);
+  border-bottom: 1px solid var(--text-dim);
+  padding-bottom: 2px;
+  margin: 10px 0 6px;
+  font-size: 0.9em;
+  text-shadow: 0 0 8px var(--accent2-glow);
+  letter-spacing: 0.08em;
+}
+
+/* Project cards */
+.project-card {
+  border: 1px solid var(--text-dim);
+  border-left: 3px solid var(--accent);
+  padding: 8px 12px;
+  margin: 6px 0;
+  border-radius: 0 4px 4px 0;
+  background: rgba(0,255,65,0.02);
+}
+.project-card .proj-title {
+  color: var(--accent);
+  font-weight: bold;
+  font-size: 1em;
+  text-shadow: 0 0 6px var(--accent-glow);
+}
+.project-card .proj-desc {
+  color: var(--text-muted);
+  font-size: 0.88em;
+  margin: 2px 0;
+}
+.project-card .proj-stack { color: var(--accent2); font-size: 0.82em; }
+.project-card .proj-link a {
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 0.82em;
+  border-bottom: 1px dashed var(--accent-dim);
+}
+.project-card .proj-link a:hover {
+  text-shadow: 0 0 8px var(--accent-glow);
+  border-bottom-style: solid;
+}
+
+/* Contact links */
+.contact-line { display: flex; align-items: center; gap: 10px; margin: 4px 0; }
+.contact-label { color: var(--text-muted); min-width: 80px; }
+.contact-value a {
+  color: var(--accent);
+  text-decoration: none;
+  text-shadow: 0 0 5px var(--accent-glow);
+  border-bottom: 1px dashed var(--accent-dim);
+}
+.contact-value a:hover { text-shadow: 0 0 12px var(--accent-glow); }
+
+/* Theme badge */
+.theme-badge {
+  display: inline-block;
+  border: 1px solid var(--accent);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.8em;
+  color: var(--accent);
+  text-shadow: 0 0 5px var(--accent-glow);
+  margin: 2px 4px;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.theme-badge:hover, .theme-badge.active {
+  background: var(--accent);
+  color: var(--bg-primary);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+/* ── Input Row ───────────────────────────────────────────── */
+#input-row {
+  display: flex;
+  align-items: center;
+  padding: 10px 20px 12px;
+  gap: 8px;
+  border-top: 1px solid var(--text-dim);
+  background: var(--bg-terminal);
+  flex-shrink: 0;
+}
+
+.input-prompt {
+  color: var(--accent);
+  white-space: nowrap;
+  font-weight: bold;
+  font-size: 1em;
+  text-shadow: 0 0 7px var(--accent-glow);
+  flex-shrink: 0;
+}
+
+#cmd-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 1em;
+  caret-color: var(--accent);
+  line-height: 1.5;
+  min-width: 0;
+}
+
+#cmd-input::selection {
+  background: var(--accent);
+  color: var(--bg-primary);
+}
+
+/* ── Blinking cursor indicator (decorative) ──────────────── */
+.cursor-block {
+  width: 9px;
+  height: 1.2em;
+  background: var(--accent);
+  display: inline-block;
+  vertical-align: middle;
+  animation: blink 1.1s step-end infinite;
+  opacity: 0;          /* hidden when not needed */
+  flex-shrink: 0;
+}
+
+/* ── Quick Commands (Mobile) ─────────────────────────────── */
+#quick-cmds {
+  display: none;
+  overflow-x: auto;
+  padding: 8px 12px;
+  gap: 8px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--text-dim);
+  scrollbar-width: none;
+  flex-shrink: 0;
+}
+#quick-cmds::-webkit-scrollbar { display: none; }
+
+.qcmd {
+  white-space: nowrap;
+  padding: 5px 13px;
+  border: 1px solid var(--accent-dim);
+  border-radius: 16px;
+  font-family: inherit;
+  font-size: 0.8em;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+  flex-shrink: 0;
+}
+.qcmd:hover, .qcmd:active {
+  background: var(--accent);
+  color: var(--bg-primary);
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+/* ── Matrix Rain Canvas ──────────────────────────────────── */
+#matrix-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: none;
+  cursor: crosshair;
+}
+
+#matrix-close {
+  position: fixed;
+  top: 18px;
+  right: 22px;
+  z-index: 9001;
+  display: none;
+  background: rgba(0,0,0,0.7);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  font-family: inherit;
+  font-size: 0.85em;
+  padding: 4px 12px;
+  cursor: pointer;
+  border-radius: 4px;
+  letter-spacing: 0.1em;
+}
+#matrix-close:hover { background: var(--accent); color: var(--bg-primary); }
+
+/* ── Animations ──────────────────────────────────────────── */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.7); }
+}
+
+@keyframes fadein {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes glitch {
+  0%   { text-shadow: 2px 0 var(--accent2), -2px 0 var(--error); }
+  25%  { text-shadow: -2px 0 var(--accent2), 2px 0 var(--error); }
+  50%  { text-shadow: 0 0 0 transparent; }
+  75%  { text-shadow: 1px 1px var(--accent2), -1px -1px var(--error); }
+  100% { text-shadow: 2px 0 var(--accent2), -2px 0 var(--error); }
+}
+
+.glitch {
+  animation: glitch 0.25s steps(1) 3;
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 640px) {
+  html, body { font-size: 12px; }
+
+  .header-status { display: none; }
+  .window-title  { text-align: left; font-size: 0.72em; }
+  .header-info   { gap: 10px; padding: 4px 12px 6px; font-size: 0.73em; }
+  .session-meta  { gap: 8px; }
+  .meta-tag .label { display: none; }
+
+  #output { padding: 12px 12px 8px; }
+  #input-row { padding: 8px 12px 10px; }
+
+  #quick-cmds { display: flex; }
+
+  .skill-name { width: 120px; font-size: 0.85em; }
+  .skill-bar-track { max-width: 140px; }
+
+  .project-card { padding: 6px 10px; }
+}
+
+@media (min-width: 641px) {
+  #quick-cmds { display: none !important; }
+}
+
+@media (min-width: 1200px) {
+  html, body { font-size: 15px; }
+}
+
+/* ── Scrollbar for Firefox ───────────────────────────────── */
+#output { scroll-behavior: smooth; }
+
+/* ── Utility ─────────────────────────────────────────────── */
+.hl-accent  { color: var(--accent);  text-shadow: 0 0 6px var(--accent-glow); }
+.hl-accent2 { color: var(--accent2); text-shadow: 0 0 6px var(--accent2-glow); }
+.hl-muted   { color: var(--text-muted); }
+.hl-error   { color: var(--error); }
+.hl-warn    { color: var(--warn); }
+.bold       { font-weight: bold; }
