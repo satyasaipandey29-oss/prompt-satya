@@ -11,7 +11,7 @@
 //     Never commit a real key to a public repository.
 // ─────────────────────────────────────────────────────────────
 const GEMINI_API_KEY = window.STREAMLIT_GEMINI_KEY || "";
-const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;/* ── Uptime clock ─────────────────────────────────────────── */
+const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;/* ── Uptime clock ─────────────────────────────────────────── */
 const BOOT_TIME = Date.now();
 function uptime() {
   const s = Math.floor((Date.now() - BOOT_TIME) / 1000);
@@ -522,13 +522,27 @@ function runAIQuery(args) {
   // ── Async Gemini fetch ────────────────────────────────────
   (async () => {
     try {
-      const res = await fetch(GEMINI_ENDPOINT, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: userPrompt }] }],
-        }),
-      });
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=${window.STREAMLIT_GEMINI_KEY || GEMINI_API_KEY}`, {
+
+method: "POST",
+
+headers: {
+
+"Content-Type": "application/json"
+
+},
+
+body: JSON.stringify({
+
+contents: [{
+
+parts: [{ text: query }]
+
+}]
+
+})
+
+}); 
 
       if (!res.ok) {
         const errBody = await res.text();
