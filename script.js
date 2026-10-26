@@ -504,92 +504,7 @@ function runAIQuery(args) {
   const userPrompt = args.join(' ').trim();
 
   // ── Loading node (injected immediately) ───────────────────
-  const loader = document.createElement('div');
-  loader.className = 'output-block ai-loader';
-  loader.innerHTML = `
-<div class="ai-prefix">[AI CORE]</div>
-<div class="ai-loading">
-  <span class="ai-spinner">◐</span>
-  <span class="ai-loading-text">Processing query</span>
-  <span class="ai-dots"></span>
-</div>`;
-  output.appendChild(loader);
-  scrollBottom();
-
-  // Disable input while waiting
-  cmdInput.disabled = true;
-
-  // ── Async Gemini fetch ────────────────────────────────────
- const queryText = (typeof args !== 'undefined' && Array.isArray(args)) ? args.join(' ') : 
-                          (typeof args !== 'undefined' && args ? String(args) : '');
-
-        if (!queryText.trim()) {
-            output.appendChild(html(`
-                <div class="output-block">
-                    <span style="color: var(--color-warn);">Usage:</span> ask <your question or prompt><br>
-                    <span style="color: var(--color-text-dim);">Example: ask What is a Merkle tree?</span>
-                </div>
-            `));
-            return;
-        }
-
-        const apiKey = window.STREAMLIT_GEMINI_KEY || (typeof GEMINI_API_KEY !== 'undefined' ? GEMINI_API_KEY : '');
-        if (!apiKey) {
-            output.appendChild(errorBlock("[AI CORE ERROR]: No API key configured. Check Streamlit Secrets."));
-            return;
-        }
-
-        const loader = document.createElement('div');
-        loader.className = 'output-block';
-        loader.innerHTML = '<span style="color: var(--color-accent);">[AI CORE]</span> Thinking<span class="blink">...</span>';
-        output.appendChild(loader);
-        scrollBottom();
-
-        cmdInput.disabled = true;
-
-        const endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=" + apiKey;
-
-        const xhr = new XMLHttpRequest();
-        xhr.open("POST", endpoint, true);
-        xhr.setRequestHeader("Content-Type", "application/json");
-
-        xhr.onreadystatechange = function () {
-            if (xhr.readyState === 4) {
-                cmdInput.disabled = false;
-                if (loader && loader.parentNode) loader.remove();
-
-                if (xhr.status === 200) {
-                    try {
-                        const data = JSON.parse(xhr.responseText);
-                        const reply = data.candidates[0].content.parts[0].text;
-                        output.appendChild(html(`<div class="output-block" style="white-space: pre-wrap; line-height: 1.5;"><span style="color: var(--color-accent); font-weight: bold;">[GEMINI]</span>\n${reply}</div>`));
-                    } catch (e) {
-                        output.appendChild(errorBlock("Error parsing response: " + e.message));
-                    }
-                } else {
-                    output.appendChild(errorBlock("HTTP " + xhr.status + ": " + xhr.responseText));
-                }
-                scrollBottom();
-                cmdInput.focus();
-            }
-        };
-
-        const payload = JSON.stringify({
-            contents: [{
-                parts: [{ text: queryText }]
-            }]
-        });
-
-        xhr.send(payload);            return;
-        }
-
-        const apiKey = window.STREAMLIT_GEMINI_KEY || (typeof GEMINI_API_KEY !== 'undefined' ? GEMINI_API_KEY : '');
-        if (!apiKey) {
-            output.appendChild(errorBlock("[AI CORE ERROR]: No API key configured. Check Streamlit Secrets."));
-            return;
-        }
-
-        const loader = document.createElement('div');
+ const loader = document.createElement('div');
         loader.className = 'output-block';
         loader.innerHTML = '<span style="color: var(--color-accent);">[AI CORE]</span> Thinking<span class="blink">...</span>';
         output.appendChild(loader);
@@ -599,15 +514,40 @@ function runAIQuery(args) {
 
         (async () => {
             try {
+                const apiKey = window.STREAMLIT_GEMINI_KEY || (typeof GEMINI_API_KEY !== 'undefined' ? GEMINI_API_KEY : '');
+                const userQuestion = (typeof args !== 'undefined' && Array.isArray(args)) ? args.join(' ') : 
+                                     (typeof args !== 'undefined' ? String(args) : (typeof queryText !== 'undefined' ? queryText : ''));
+                
                 const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=${apiKey}`;
+                
                 const res = await window.fetch(endpoint, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: queryText }] }]
+                        contents: [{
+                            parts: [{ text: userQuestion }]
+                        }]
                     })
                 });
 
+                const data = await res.json();
+                if (loader && loader.parentNode) loader.remove();
+
+                if (res.ok) {
+                    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response received.';
+                    output.appendChild(html(`<div class="output-block" style="white-space: pre-wrap; line-height: 1.5;"><span style="color: var(--color-accent); font-weight: bold;">[GEMINI]</span>\n${reply}</div>`));
+                } else {
+                    output.appendChild(errorBlock(`[AI CORE ERROR] HTTP ${res.status}: ${data.error?.message || JSON.stringify(data)}`));
+                }
+            } catch (err) {
+                if (loader && loader.parentNode) loader.remove();
+                output.appendChild(errorBlock(`[AI CORE ERROR] ${err.message}`));
+            } finally {
+                cmdInput.disabled = false;
+                scrollBottom();
+                cmdInput.focus();
+            }
+        })();
                 const data = await res.json();
                 loader.remove();
 
