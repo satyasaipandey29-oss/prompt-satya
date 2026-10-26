@@ -391,6 +391,7 @@ const COMMANDS = {
 
   /* ── banner ───────────────────────────────────────────── */
   banner() {
+    output.innerHTML = '';
     printBanner();
     return null;
   },
@@ -646,10 +647,7 @@ cmdInput.addEventListener('keydown', (e) => {
 });
 
 /* ── Auto-focus on terminal click ────────────────────────── */
-document.getElementById('terminal-wrapper').addEventListener('click', () => {
-  cmdInput.focus();
-});
-document.getElementById('header').addEventListener('click', () => {
+document.getElementById('terminal-window').addEventListener('click', () => {
   cmdInput.focus();
 });
 
@@ -669,26 +667,35 @@ function printBanner() {
   const banner = document.createElement('div');
   banner.className = 'output-block';
   banner.innerHTML = `
-<pre class="banner-line">
- ██████╗██╗   ██╗██████╗ ███████╗██████╗ ████████╗███████╗██████╗ ███╗   ███╗
-██╔════╝╚██╗ ██╔╝██╔══██╗██╔════╝██╔══██╗╚══██╔══╝██╔════╝██╔══██╗████╗ ████║
-██║      ╚████╔╝ ██████╔╝█████╗  ██████╔╝   ██║   █████╗  ██████╔╝██╔████╔██║
-██║       ╚██╔╝  ██╔══██╗██╔══╝  ██╔══██╗   ██║   ██╔══╝  ██╔══██╗██║╚██╔╝██║
-╚██████╗   ██║   ██████╔╝███████╗██║  ██║   ██║   ███████╗██║  ██║██║ ╚═╝ ██║
- ╚═════╝   ╚═╝   ╚═════╝ ╚══════╝╚═╝  ╚═╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝
+<pre class="banner-line" style="font-size:0.9em;">
+ ███████╗ █████╗ ████████╗██╗   ██╗ █████╗
+ ██╔════╝██╔══██╗╚══██╔══╝╚██╗ ██╔╝██╔══██╗
+ ███████╗███████║   ██║    ╚████╔╝ ███████║
+ ╚════██║██╔══██║   ██║     ╚██╔╝  ██╔══██║
+ ███████║██║  ██║   ██║      ██║   ██║  ██║
+ ╚══════╝╚═╝  ╚═╝   ╚═╝      ╚═╝   ╚═╝  ╚═╝
 </pre>
-<div style="color:var(--text-muted);margin-top:2px;font-size:0.82em;letter-spacing:0.06em">
-  v1.0.0 &nbsp;·&nbsp; Kernel 6.7.0-cyber &nbsp;·&nbsp;
-  Type <span style="color:var(--accent)">help</span> to see available commands.
+<div style="color:var(--accent2);font-size:0.88em;letter-spacing:0.18em;margin:-4px 0 10px;text-shadow:0 0 10px var(--accent2-glow);">
+  ── TTY0 &nbsp;·&nbsp; INTERACTIVE PORTFOLIO TERMINAL ──
 </div>
-<div style="margin:8px 0 4px;color:var(--text-muted);font-size:0.82em">
-  ┌─ Session established ──────────────────────────────────────────────────────┐
-  │  Welcome back, <span style="color:var(--accent)">user</span>.
-  All systems nominal. Stay curious. Build things. 🚀  │
-  └───────────────────────────────────────────────────────────────────────────┘
+
+<div class="boot-log" style="color:var(--text-muted);font-size:0.82em;line-height:1.9;">
+  <div><span style="color:var(--accent)">[ &nbsp;OK &nbsp;]</span> &nbsp;Loaded kernel modules &nbsp;<span style="color:var(--text-dim)">6.7.0-cyber-amd64</span></div>
+  <div><span style="color:var(--accent)">[ &nbsp;OK &nbsp;]</span> &nbsp;Started CRT display driver &nbsp;<span style="color:var(--text-dim)">scanline@vga.service</span></div>
+  <div><span style="color:var(--accent)">[ &nbsp;OK &nbsp;]</span> &nbsp;Mounted filesystem &nbsp;<span style="color:var(--text-dim)">/home/satya</span></div>
+  <div><span style="color:var(--accent)">[ &nbsp;OK &nbsp;]</span> &nbsp;Reached target &nbsp;<span style="color:var(--text-dim)">Multi-User System</span></div>
+  <div><span style="color:var(--warn)">[WARN ]</span> &nbsp;coffee.service: caffeination level low — please refill</div>
+  <div><span style="color:var(--accent)">[ &nbsp;OK &nbsp;]</span> &nbsp;Portfolio shell ready &nbsp;<span style="color:var(--text-dim)">cysh 3.1.4 (interactive)</span></div>
+</div>
+
+<div style="margin-top:12px;border:1px solid var(--text-dim);border-left:3px solid var(--accent);
+            padding:8px 14px;border-radius:0 4px 4px 0;background:rgba(0,255,65,0.03);">
+  <span style="color:var(--accent);font-weight:bold;">
+    Type <span style="text-shadow:0 0 8px var(--accent-glow);">'help'</span>
+    to see available commands or click a chip below.
+  </span>
 </div>`;
   output.appendChild(banner);
-  scrollBottom();
 }
 
 /* ── Matrix Rain ─────────────────────────────────────────── */
@@ -761,7 +768,10 @@ document.addEventListener('keydown', (e) => {
 /* ── Init ────────────────────────────────────────────────── */
 (function init() {
   printBanner();
-  cmdInput.focus();
+  // Input row appears immediately after banner — focus it
+  requestAnimationFrame(() => {
+    cmdInput.focus();
+  });
   // Kick uptime display
   if (uptimeEl) uptimeEl.textContent = uptime();
 })();
