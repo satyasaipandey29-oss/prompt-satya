@@ -94,19 +94,24 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body {
+  min-height: 100%;
   height: 100%;
   background: var(--bg-primary);
   color: var(--text-primary);
   font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', Courier, monospace;
   font-size: clamp(12px, 1.4vw, 15px);
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
-/* ── App Shell ───────────────────────────────────────────── */
+/* ── App Shell — centred floating window ─────────────────── */
 #app {
   display: flex;
   flex-direction: column;
-  height: 100dvh;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 100dvh;
+  padding: 28px 16px 40px;
   background: var(--bg-primary);
   position: relative;
 }
@@ -133,11 +138,31 @@ html, body {
   position: fixed;
   inset: 0;
   background: radial-gradient(ellipse at center,
-    transparent 55%,
-    rgba(0,0,0,0.65) 100%
+    transparent 50%,
+    rgba(0,0,0,0.7) 100%
   );
   pointer-events: none;
   z-index: 9997;
+}
+
+/* ── Terminal floating window ────────────────────────────── */
+#terminal-window {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 900px;
+  min-height: 550px;
+  background: var(--bg-terminal);
+  border-radius: 10px;
+  border: 1px solid var(--accent-dim);
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,0.6),
+    0 8px 48px rgba(0,0,0,0.8),
+    0 0 60px var(--accent-glow),
+    inset 0 0 80px rgba(0,0,0,0.2);
+  overflow: hidden;
+  position: relative;
+  z-index: 10;
 }
 
 /* ── Header Bar ──────────────────────────────────────────── */
@@ -147,6 +172,7 @@ html, body {
   border-bottom: 1px solid var(--accent-dim);
   box-shadow: 0 1px 12px var(--accent-glow);
   padding: 0;
+  border-radius: 10px 10px 0 0;
   z-index: 100;
   user-select: none;
 }
@@ -157,6 +183,7 @@ html, body {
   padding: 10px 16px 8px;
   gap: 12px;
   border-bottom: 1px solid var(--text-dim);
+  border-radius: 10px 10px 0 0;
 }
 
 .chrome-dots {
@@ -241,17 +268,18 @@ html, body {
 
 /* ── Terminal Body ───────────────────────────────────────── */
 #terminal-wrapper {
-  flex: 1;
-  overflow: hidden;
   display: flex;
   flex-direction: column;
+  justify-content: flex-start;
+  flex: 1;
+  min-height: 0;
   position: relative;
 }
 
 #output {
-  flex: 1;
-  overflow-y: auto;
-  padding: 18px 20px 10px;
+  flex: 0 0 auto;           /* grows with content, never pushed to bottom */
+  overflow-y: visible;
+  padding: 18px 20px 4px;
   scrollbar-width: thin;
   scrollbar-color: var(--accent-dim) transparent;
 }
@@ -411,10 +439,10 @@ html, body {
 #input-row {
   display: flex;
   align-items: center;
-  padding: 10px 20px 12px;
+  padding: 8px 20px 10px;
   gap: 8px;
-  border-top: 1px solid var(--text-dim);
-  background: var(--bg-terminal);
+  /* No border-top — flows naturally below output */
+  background: transparent;
   flex-shrink: 0;
 }
 
@@ -457,12 +485,12 @@ html, body {
   flex-shrink: 0;
 }
 
-/* ── Quick Commands (Mobile) ─────────────────────────────── */
+/* ── Quick Commands (always visible below terminal) ──────── */
 #quick-cmds {
   display: none;
   overflow-x: auto;
-  padding: 8px 12px;
-  gap: 8px;
+  padding: 8px 14px 10px;
+  gap: 7px;
   background: var(--bg-secondary);
   border-top: 1px solid var(--text-dim);
   scrollbar-width: none;
@@ -472,21 +500,23 @@ html, body {
 
 .qcmd {
   white-space: nowrap;
-  padding: 5px 13px;
-  border: 1px solid var(--accent-dim);
+  padding: 5px 14px;
+  border: 1px solid var(--text-dim);          /* subtle dark border */
   border-radius: 16px;
   font-family: inherit;
-  font-size: 0.8em;
-  background: transparent;
-  color: var(--accent);
+  font-size: 0.78em;
+  background: rgba(0,0,0,0.3);
+  color: var(--text-muted);
   cursor: pointer;
-  transition: background 0.15s, box-shadow 0.15s;
+  transition: color 0.15s, border-color 0.15s, box-shadow 0.15s, background 0.15s;
   flex-shrink: 0;
+  letter-spacing: 0.04em;
 }
 .qcmd:hover, .qcmd:active {
-  background: var(--accent);
-  color: var(--bg-primary);
-  box-shadow: 0 0 10px var(--accent-glow);
+  color: var(--accent);                       /* neon green on hover */
+  border-color: var(--accent-dim);
+  background: rgba(0,255,65,0.06);
+  box-shadow: 0 0 8px var(--accent-glow);
 }
 
 /* ── Matrix Rain Canvas ──────────────────────────────────── */
@@ -548,14 +578,24 @@ html, body {
 @media (max-width: 640px) {
   html, body { font-size: 12px; }
 
+  #app { padding: 0; min-height: 100dvh; }
+
+  #terminal-window {
+    border-radius: 0;
+    border: none;
+    min-height: 100dvh;
+    box-shadow: none;
+  }
+
+  .header-chrome { border-radius: 0; }
   .header-status { display: none; }
   .window-title  { text-align: left; font-size: 0.72em; }
   .header-info   { gap: 10px; padding: 4px 12px 6px; font-size: 0.73em; }
   .session-meta  { gap: 8px; }
   .meta-tag .label { display: none; }
 
-  #output { padding: 12px 12px 8px; }
-  #input-row { padding: 8px 12px 10px; }
+  #output { padding: 12px 12px 4px; }
+  #input-row { padding: 6px 12px 8px; }
 
   #quick-cmds { display: flex; }
 
@@ -571,6 +611,7 @@ html, body {
 
 @media (min-width: 1200px) {
   html, body { font-size: 15px; }
+  #app { padding: 36px 24px 48px; }
 }
 
 /* ── Scrollbar for Firefox ───────────────────────────────── */
